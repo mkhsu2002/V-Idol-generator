@@ -18,26 +18,83 @@ client = openai.OpenAI(api_key=api_key)
 
 # 定義基礎提示詞
 BASE_PROMPTS = {
-    1: """你是一位專精於心理學、劇本創作的虛擬偶像人設專家。根據"{input_text}"為基礎參考來設計一個虛擬偶像的人設參數框架，須含括以下參數：基本個資、性格特徵、外觀描述、興趣愛好、背景故事等，並以表格方式列出每個類別和對應的參數名稱。""",
-    2: """你是一位專精於心理學與數據建模的虛擬偶像人設專家，致力於打造具高度實用性的人設資料。根據以下虛擬偶像的人設參數框架，請針對每個類別展開更詳細的子參數，確保參數可供後續 LLM 微調使用：""",
-    3: """你是一位心理學與創意寫作專家，擅長為虛擬偶像設計人設資料。根據以下虛擬偶像的人設參數細目，請為每個參數生成具體的例子，確保範例具有創造性、貼近現代受眾，並涵蓋多樣性：""",
-    4: """你是一位理解理論的心理學專家，針對一群具有最基本特徵的人類，根據以下的特徵進行行為模式的分析，並針對明確的問題進行優化建議：""",
-    5: """根據檢查到的問題及優化建議，重新調整生成一份更細緻的人類行為描述：""",
-    6: """你是一位公關造型設計師，擅長為偶像設計符合大眾喜愛具有人緣的造型。根據以上優化後的人設資料，請寫出三種適合外觀生成的提示詞，對人物的五官及髮型有詳盡描述，分別提供中文及英文，強調寫實人像，4K高解析："""
+    1: """你是一位專精於心理學、劇本創作的虛擬偶像人設專家。
+請使用繁體中文回應。
+根據以下描述來設計虛擬偶像的人設參數框架：
+{input_text}
+
+請以表格方式列出以下類別和對應的參數名稱：
+1. 基本個資
+2. 性格特徵
+3. 外觀描述
+4. 興趣愛好
+5. 背景故事""",
+
+    2: """你是一位專精於心理學與數據建模的虛擬偶像人設專家。
+請使用繁體中文回應。
+根據以下人設框架，請針對每個類別展開更詳細的子參數：
+
+{previous_result}""",
+
+    3: """你是一位心理學與創意寫作專家。
+請使用繁體中文回應。
+根據以下參數細目，請為每個參數生成具體的例子：
+
+{previous_result}""",
+
+    4: """你是一位理解理論的心理學專家。
+請使用繁體中文回應。
+根據以下特徵進行行為模式分析，並提供優化建議：
+
+{previous_result}""",
+
+    5: """請使用繁體中文回應。
+根據以下分析，重新調整並生成更細緻的人物描述：
+
+{previous_result}""",
+
+    6: """你是一位專業的角色設計師。
+請使用繁體中文回應，並提供英文對照。
+根據以下人設資料，請提供三組外觀描述，包含：
+1. 五官特徵
+2. 髮型設計
+3. 整體風格
+強調寫實人像風格，4K高解析度：
+
+{previous_result}"""
 }
 
 def generate_response(prompt):
     try:
+        messages = [
+            {
+                "role": "system",
+                "content": "你是一位專業的虛擬偶像設計助手，請使用繁體中文回應。"
+            },
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ]
+        
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": prompt}],
+            messages=messages,
             temperature=0.7,
-            max_tokens=1000
+            max_tokens=1500
         )
+        
         return response.choices[0].message.content
     except Exception as e:
         st.error(f"生成過程發生錯誤: {str(e)}")
         return None
+
+def get_full_prompt(step, input_text="", previous_result=""):
+    """生成完整提示詞"""
+    if step == 1:
+        return BASE_PROMPTS[step].format(input_text=input_text)
+    else:
+        return BASE_PROMPTS[step].format(previous_result=previous_result)
 
 def save_results_to_file(results, step):
     """將結果儲存為JSON檔案"""
@@ -109,12 +166,7 @@ def main():
             if current_step <= 6:
                 with st.expander(f"步驟 {current_step} 提示詞", expanded=True):
                     # 組合完整提示詞
-                    if current_step == 1:
-                        full_prompt = BASE_PROMPTS[current_step].format(input_text=st.session_state.input_text)
-                    else:
-                        full_prompt = BASE_PROMPTS[current_step]
-                        if current_step > 1:
-                            full_prompt += f"\n\n{st.session_state.results[f'step{current_step-1}']}"
+                    full_prompt = get_full_prompt(current_step, st.session_state.input_text, st.session_state.results[f'step{current_step-1}'] if current_step > 1 else "")
                     
                     # 允許編輯提示詞
                     edited_prompt = st.text_area(

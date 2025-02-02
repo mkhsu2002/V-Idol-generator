@@ -13,6 +13,13 @@
 
 ## 專案結構
 
+V-Idol-generator/
+├── app.py            # 主程式
+├── .env              # 環境變數配置
+├── .gitignore        # Git 忽略文件
+├── README.md         # 專案說明文件
+└── requirements.txt  # 依賴套件清單
+
 ## 安裝說明
 
 1. 克隆專案： 
