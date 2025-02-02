@@ -74,7 +74,7 @@ def save_complete_results(results):
     return filename
 
 def main():
-    st.title("V-Idol 人設生成器")
+    st.title("FlyPig V-Idol 人設生成器")
     
     # 初始化 session state
     if 'current_step' not in st.session_state:

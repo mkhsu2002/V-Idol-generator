@@ -1,4 +1,4 @@
-# V-Idol Generator
+# FlyPig V-Idol Generator
 
 這是一個使用 OpenAI API 和 Streamlit 開發的虛擬偶像人設生成工具。通過六個步驟，逐步生成完整的虛擬偶像人設參數集。
 
