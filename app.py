@@ -4,6 +4,7 @@ import os
 from dotenv import load_dotenv
 import json
 from datetime import datetime
+import pandas as pd
 
 # 載入環境變數
 load_dotenv()
@@ -130,6 +131,29 @@ def save_complete_results(results):
     
     return filename
 
+def auto_generate_all():
+    """自動生成所有步驟"""
+    with st.spinner("自動生成中..."):
+        for step in range(st.session_state.current_step, 7):
+            # 獲取當前步驟的提示詞
+            current_prompt = get_full_prompt(
+                step,
+                st.session_state.input_text,
+                st.session_state.results[f'step{step-1}'] if step > 1 else ""
+            )
+            
+            # 生成結果
+            result = generate_response(current_prompt)
+            if result:
+                st.session_state.results[f"step{step}"] = result
+            else:
+                st.error(f"步驟 {step} 生成失敗")
+                break
+        
+        # 更新當前步驟到最後
+        st.session_state.current_step = 6
+        st.rerun()
+
 def main():
     st.title("FlyPig V-Idol 人設生成器")
     
@@ -181,14 +205,22 @@ def main():
             # 生成按鈕
             st.write("")  # 空行對齊
             st.write("")  # 空行對齊
-            if st.button("生成下一步", disabled=current_step > 6):
-                with st.spinner("生成中..."):
-                    result = generate_response(st.session_state.prompts[current_step])
-                    if result:
-                        st.session_state.results[f"step{current_step}"] = result
-                        if current_step < 6:
-                            st.session_state.current_step += 1
-                        st.rerun()
+            
+            col2_1, col2_2 = st.columns(2)
+            
+            with col2_1:
+                if st.button("生成下一步", disabled=current_step > 6):
+                    with st.spinner("生成中..."):
+                        result = generate_response(st.session_state.prompts[current_step])
+                        if result:
+                            st.session_state.results[f"step{current_step}"] = result
+                            if current_step < 6:
+                                st.session_state.current_step += 1
+                            st.rerun()
+            
+            with col2_2:
+                if st.button("自動完成所有步驟", disabled=current_step > 6):
+                    auto_generate_all()
             
             # 完整下載按鈕（只在完成所有步驟後顯示）
             if all(st.session_state.results.values()):
